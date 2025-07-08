@@ -1,0 +1,34 @@
+.gpu-monitor-container {
+    spacing: 8px;
+    padding: 0 8px;
+}
+
+.gpu-monitor-icon {
+    icon-size: 16px;
+    padding-right: 8px;
+}
+
+.gpu-monitor-metric-icon {
+    icon-size: 12px;
+    padding-right: 4px;
+}
+
+.gpu-monitor-label {
+    font-family: monospace;
+    font-size: 11px;
+    padding-right: 8px;
+}
+
+.temp-normal {
+    color: #4E9A06;
+}
+
+.temp-warm {
+    color: #C4A000;
+}
+
+.temp-high {
+    color: #CC0000;
+    font-weight: bold;
+}
+.system-status-icon{icon-size: 1.08em;}
