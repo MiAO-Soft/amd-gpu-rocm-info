@@ -79,51 +79,64 @@ const GPUMonitorIndicator = GObject.registerClass(
     }
 
     _updateGPUInfo() {
-      try {
-        // Get GPU frequency
-        let [success, freqOut] = GLib.spawn_command_line_sync(
-          "rocm-smi --showclocks"
-        );
-        if (success) {
-          let freqMatch = freqOut.toString().match(/.*sclk.*\((\d+).*/i);
-          if (freqMatch) {
-            this._freqLabel.set_text(`${freqMatch[1]} MHz`);
-          }
-        }
+      // Helper function to run a command asynchronously
+      const runCommand = (args, callback) => {
+        let subprocess = new Gio.Subprocess({
+          argv: args,
+          flags:
+            Gio.SubprocessFlags.STDOUT_PIPE | Gio.SubprocessFlags.STDERR_PIPE,
+        });
+        subprocess.init(null);
 
-        // Get GPU temperature
-        let [successTemp, tempOut] = GLib.spawn_command_line_sync(
-          "rocm-smi --showtemp"
-        );
-        if (successTemp) {
-          let tempMatch = tempOut.toString().match(/.*jun.*: ([\d|\.]+).*/i);
-          if (tempMatch) {
-            let temp = parseInt(tempMatch[1]);
-            this._tempLabel.set_text(`${temp}°C`);
-            // Change color based on temperature
-            if (temp > 85) {
-              this._tempLabel.style_class = "gpu-monitor-label temp-high";
-            } else if (temp > 70) {
-              this._tempLabel.style_class = "gpu-monitor-label temp-warm";
+        subprocess.communicate_utf8_async(null, null, (proc, res) => {
+          try {
+            let [, stdout, stderr] = proc.communicate_utf8_finish(res);
+            if (proc.get_successful()) {
+              callback(stdout);
             } else {
-              this._tempLabel.style_class = "gpu-monitor-label temp-normal";
+              console.error(
+                `Command failed: ${args.join(" ")}, Error: ${stderr}`
+              );
             }
+          } catch (e) {
+            console.error(`Error running command ${args.join(" ")}:`, e);
           }
-        }
+        });
+      };
 
-        // Get GPU memory usage
-        let [successMem, memOut] = GLib.spawn_command_line_sync(
-          "rocm-smi --showmeminfo vram"
-        );
-        if (successMem) {
-          let memMatch = memOut.toString().match(/.*Used.*: (\d+).*/i);
-          if (memMatch) {
-            this._memLabel.set_text(this._formatBytes(parseInt(memMatch[1])));
+      // Get GPU frequency
+      runCommand(["rocm-smi", "--showclocks"], (stdout) => {
+        let freqMatch = stdout.match(/.*sclk.*\((\d+).*/i);
+        if (freqMatch) {
+          this._freqLabel.set_text(`${freqMatch[1]} MHz`);
+        }
+      });
+
+      // Get GPU temperature
+      runCommand(["rocm-smi", "--showtemp"], (stdout) => {
+        let tempMatch = stdout.match(/.*jun.*: ([\d|\.]+).*/i);
+        if (tempMatch) {
+          let temp = parseInt(tempMatch[1]);
+          this._tempLabel.set_text(`${temp}°C`);
+          // Change color based on temperature
+          if (temp > 85) {
+            this._tempLabel.style_class = "gpu-monitor-label temp-high";
+          } else if (temp > 70) {
+            this._tempLabel.style_class = "gpu-monitor-label temp-warm";
+          } else {
+            this._tempLabel.style_class = "gpu-monitor-label temp-normal";
           }
         }
-      } catch (e) {
-        console.error("Failed to update GPU info:", e);
-      }
+      });
+
+      // Get GPU memory usage
+      runCommand(["rocm-smi", "--showmeminfo", "vram"], (stdout) => {
+        let memMatch = stdout.match(/.*Used.*: (\d+).*/i);
+        if (memMatch) {
+          this._memLabel.set_text(this._formatBytes(parseInt(memMatch[1])));
+        }
+      });
+
       return true;
     }
 
