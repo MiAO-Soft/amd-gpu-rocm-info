@@ -213,7 +213,7 @@ const GPUMonitorIndicator = GObject.registerClass(
 export default class AmdGpuMonitorExtension extends Extension {
   enable() {
     this._indicator = new GPUMonitorIndicator();
-    Main.panel.addToStatusArea(this.uuid, this._indicator);
+    Main.panel.addToStatusArea(this.uuid, this._indicator, 1, "left");
   }
 
   disable() {
