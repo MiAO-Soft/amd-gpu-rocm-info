@@ -55,7 +55,28 @@ const GPUMonitorIndicator = GObject.registerClass(
       );
 
       this.add_child(this._container);
+
+      // Initialize timeout source
+      this._timeout = null;
+
+      // Connect to screen lock/unlock signals
+      this._screenLockedId = Main.screenShield.connect('lock-screen', () => this._onLockScreen());
+      this._screenUnlockedId = Main.screenShield.connect('unlock-screen', () => this._onUnlockScreen());
+
+      this._startMonitoring();
+    }
+
+    _startMonitoring() {
+      // Stop any existing timeout
+      if (this._timeout) {
+        GLib.source_remove(this._timeout);
+        this._timeout = null;
+      }
+
+      // Initial update
       this._updateGPUInfo();
+
+      // Start periodic updates
       this._timeout = GLib.timeout_add_seconds(
         GLib.PRIORITY_DEFAULT,
         GPU_MONITOR_REFRESH_INTERVAL / 1000,
@@ -66,13 +87,26 @@ const GPUMonitorIndicator = GObject.registerClass(
       );
     }
 
+    _onLockScreen() {
+      // Clean up when screen is locked
+      if (this._timeout) {
+        GLib.source_remove(this._timeout);
+        this._timeout = null;
+      }
+    }
+
+    _onUnlockScreen() {
+      // Restart monitoring when screen is unlocked
+      this._startMonitoring();
+    }
+
     _addMetricWithIcon(iconName, label) {
       const icon = new St.Icon({
         icon_name: iconName,
         style_class: "system-status-icon",
       });
 
-      const box = new St.BoxLayout({ vertical: false });
+      const box = new St.BoxLayout({vertical: false});
       box.add_child(icon);
       box.add_child(label);
       this._container.add_child(box);
@@ -81,27 +115,31 @@ const GPUMonitorIndicator = GObject.registerClass(
     _updateGPUInfo() {
       // Helper function to run a command asynchronously
       const runCommand = (args, callback) => {
-        let subprocess = new Gio.Subprocess({
-          argv: args,
-          flags:
-            Gio.SubprocessFlags.STDOUT_PIPE | Gio.SubprocessFlags.STDERR_PIPE,
-        });
-        subprocess.init(null);
+        try {
+          let subprocess = new Gio.Subprocess({
+            argv: args,
+            flags:
+              Gio.SubprocessFlags.STDOUT_PIPE | Gio.SubprocessFlags.STDERR_PIPE,
+          });
+          subprocess.init(null);
 
-        subprocess.communicate_utf8_async(null, null, (proc, res) => {
-          try {
-            let [, stdout, stderr] = proc.communicate_utf8_finish(res);
-            if (proc.get_successful()) {
-              callback(stdout);
-            } else {
-              console.error(
-                `Command failed: ${args.join(" ")}, Error: ${stderr}`
-              );
+          subprocess.communicate_utf8_async(null, null, (proc, res) => {
+            try {
+              let [, stdout, stderr] = proc.communicate_utf8_finish(res);
+              if (proc.get_successful()) {
+                callback(stdout);
+              } else {
+                console.error(
+                  `Command failed: ${args.join(" ")}, Error: ${stderr}`
+                );
+              }
+            } catch (e) {
+              console.error(`Error running command ${args.join(" ")}:`, e);
             }
-          } catch (e) {
-            console.error(`Error running command ${args.join(" ")}:`, e);
-          }
-        });
+          });
+        } catch (e) {
+          console.error(`Error creating subprocess:`, e);
+        }
       };
 
       // Get GPU frequency
@@ -151,30 +189,37 @@ const GPUMonitorIndicator = GObject.registerClass(
     }
 
     destroy() {
+      // Disconnect signals
+      if (this._screenLockedId) {
+        Main.screenShield.disconnect(this._screenLockedId);
+        this._screenLockedId = null;
+      }
+      if (this._screenUnlockedId) {
+        Main.screenShield.disconnect(this._screenUnlockedId);
+        this._screenUnlockedId = null;
+      }
+
+      // Remove timeout
       if (this._timeout) {
         GLib.source_remove(this._timeout);
         this._timeout = null;
       }
+
+      super.destroy();
     }
   }
 );
 
-let indicator = null;
-
-export default class AmdGpuMonitorExtension {
-  constructor() {
-    this._indicator = null;
-  }
-
+export default class AmdGpuMonitorExtension extends Extension {
   enable() {
-    indicator = new GPUMonitorIndicator();
-    Main.panel.addToStatusArea("amd-gpu-monitor", indicator);
+    this._indicator = new GPUMonitorIndicator();
+    Main.panel.addToStatusArea(this.uuid, this._indicator);
   }
 
   disable() {
-    if (indicator) {
-      indicator.destroy();
-      indicator = null;
+    if (this._indicator) {
+      this._indicator.destroy();
+      this._indicator = null;
     }
   }
 }
