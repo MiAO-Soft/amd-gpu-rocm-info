@@ -1,3 +1,4 @@
 .idea
 .vscode
 deploy.sh
+amd-gpu-rocm-info@black-hat.zip
