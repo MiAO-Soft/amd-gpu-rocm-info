@@ -3,7 +3,7 @@
   "description": "A GNOME Shell extension to monitor AMD GPU infomation with ROCm.",
   "name": "AMD GPU ROCm Info",
   "shell-version": [
-    "46"
+    "46", "47", "48", "49"
   ],
   "url": "https://bitbucket.org/black-hat/amd-gpu-rocm-info",
   "uuid": "amd-gpu-rocm-info@black-hat",

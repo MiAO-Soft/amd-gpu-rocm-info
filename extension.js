@@ -11,7 +11,7 @@ import {
 import * as Main from "resource:///org/gnome/shell/ui/main.js";
 import * as PanelMenu from "resource:///org/gnome/shell/ui/panelMenu.js";
 
-const GPU_MONITOR_REFRESH_INTERVAL = 3000; // 3 seconds
+const GPU_MONITOR_REFRESH_INTERVAL = 1000; // 1 seconds
 
 const GPUMonitorIndicator = GObject.registerClass(
   class GPUMonitorIndicator extends PanelMenu.Button {
@@ -24,8 +24,8 @@ const GPUMonitorIndicator = GObject.registerClass(
       });
 
       // Create labels for each metric
-      this._freqLabel = new St.Label({
-        text: "--- MHz",
+      this._powerLabel = new St.Label({
+        text: "--- W (0%)",
         y_align: Clutter.ActorAlign.CENTER,
         style_class: "gpu-monitor-label",
       });
@@ -35,7 +35,7 @@ const GPUMonitorIndicator = GObject.registerClass(
         style_class: "gpu-monitor-label",
       });
       this._memLabel = new St.Label({
-        text: "--- MB",
+        text: "-/- GB",
         y_align: Clutter.ActorAlign.CENTER,
         style_class: "gpu-monitor-label",
       });
@@ -43,7 +43,7 @@ const GPUMonitorIndicator = GObject.registerClass(
       // Add labels to container with icons
       this._addMetricWithIcon(
         "network-transmit-receive-symbolic",
-        this._freqLabel
+        this._powerLabel
       );
       this._addMetricWithIcon(
         "power-profile-power-saver-symbolic-rtl",
@@ -60,8 +60,10 @@ const GPUMonitorIndicator = GObject.registerClass(
       this._timeout = null;
 
       // Connect to screen lock/unlock signals
-      this._screenLockedId = Main.screenShield.connect('lock-screen', () => this._onLockScreen());
-      this._screenUnlockedId = Main.screenShield.connect('unlock-screen', () => this._onUnlockScreen());
+      if (Main.screenShield !== null) {
+        this._screenLockedId = Main.screenShield.connect('lock-screen', () => this._onLockScreen());
+        this._screenUnlockedId = Main.screenShield.connect('unlock-screen', () => this._onUnlockScreen());
+      }
 
       this._startMonitoring();
     }
@@ -143,18 +145,18 @@ const GPUMonitorIndicator = GObject.registerClass(
       };
 
       // Get GPU frequency
-      runCommand(["rocm-smi", "--showclocks"], (stdout) => {
-        let freqMatch = stdout.match(/.*sclk.*\((\d+).*/i);
-        if (freqMatch) {
-          this._freqLabel.set_text(`${freqMatch[1]} MHz`);
-        }
-      });
+      runCommand(["rocm-smi", "-a", "--showmeminfo", "vram", "--json"], (stdout) => {
+        let allData = JSON.parse(stdout);
+        if ("card0" in allData) {
+          let cardData = allData["card0"];
+          let power = parseInt(cardData["Current Socket Graphics Package Power (W)"]);
+          let temp = parseInt(cardData["Temperature (Sensor edge) (C)"]);
+          let gpuuse = cardData["GPU use (%)"];
+          let vramall = this._formatBytes(parseInt(cardData["VRAM Total Memory (B)"]));
+          let vramuse = this._formatBytes(parseInt(cardData["VRAM Total Used Memory (B)"]));
 
-      // Get GPU temperature
-      runCommand(["rocm-smi", "--showtemp"], (stdout) => {
-        let tempMatch = stdout.match(/.*jun.*: ([\d|\.]+).*/i);
-        if (tempMatch) {
-          let temp = parseInt(tempMatch[1]);
+          this._powerLabel.set_text(`${power}W (${gpuuse}%)`);
+
           this._tempLabel.set_text(`${temp}°C`);
           // Change color based on temperature
           if (temp > 85) {
@@ -164,17 +166,10 @@ const GPUMonitorIndicator = GObject.registerClass(
           } else {
             this._tempLabel.style_class = "gpu-monitor-label temp-normal";
           }
+
+          this._memLabel.set_text(`${vramuse} / ${vramall}`);
         }
       });
-
-      // Get GPU memory usage
-      runCommand(["rocm-smi", "--showmeminfo", "vram"], (stdout) => {
-        let memMatch = stdout.match(/.*Used.*: (\d+).*/i);
-        if (memMatch) {
-          this._memLabel.set_text(this._formatBytes(parseInt(memMatch[1])));
-        }
-      });
-
       return true;
     }
 
@@ -185,7 +180,7 @@ const GPUMonitorIndicator = GObject.registerClass(
       const sizes = ["B", "KB", "MB", "GB"];
       const i = Math.floor(Math.log(bytes) / Math.log(k));
 
-      return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + " " + sizes[i];
+      return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + sizes[i];
     }
 
     destroy() {
