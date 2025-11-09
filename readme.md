@@ -12,6 +12,6 @@ This code is an extension for GNOME Shell that monitors and displays AMD GPU sta
 
 6. **Disabling and Cleanup**: When the extension is disabled, it properly cleans up by destroying the `GPUMonitorIndicator` instance to remove its presence from the panel.
 
-![screen](./assets/screen.jpg)
+![screen](./assets/screen.gif)
 
 The code demonstrates an effective integration of GNOME Shell with external tools (`rocm-smi`) for real-time system monitoring tailored specifically towards AMD GPUs. It showcases asynchronous command execution, UI element management, and conditional styling based on runtime data.

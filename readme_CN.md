@@ -13,4 +13,4 @@
    
 5. 效果
     
-    ![screen](./assets/screen.jpg)
+    ![screen](./assets/screen.gif)
