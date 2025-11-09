@@ -3,7 +3,7 @@
 1. 安装gnome-shell-extension manager
    
     <code>https://mattjakeman.com/apps/extension-manager</code>
-2. `sh setup.sh`
+2. `bash setup.sh`
 
 3. 打开 Extension Manager
 

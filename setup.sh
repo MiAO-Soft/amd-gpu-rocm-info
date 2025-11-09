@@ -7,7 +7,7 @@ mkdir -p ~/.local/share/gnome-shell/extensions/amd-gpu-rocm-info@black-hat
 
 cp extension.js metadata.json stylesheet.css ~/.local/share/gnome-shell/extensions/amd-gpu-rocm-info@black-hat
 
-cp ryzenadj /usr/local/bin/ryzenadj
+sudo cp ryzenadj /usr/local/bin/ryzenadj
 
 echo "🔑 Config sudo no password for /usr/local/bin/ryzenadj..."
 SUDOERS_ENTRIES=(

@@ -145,11 +145,11 @@ const GPUMonitorIndicator = GObject.registerClass(
       };
 
       // Get TDP
-      runCommand(["ryzenadj", "-i", "--json"], (stdout) => {
+      runCommand(["sudo", "ryzenadj", "-i", "--json"], (stdout) => {
         let allData = JSON.parse(stdout);
         if (!("error" in allData)) {
-          let stapmLimit = parseInt(cardData["STAPM LIMIT"]);
-          let stapmValue = parseInt(cardData["STAPM VALUE"]);
+          let stapmLimit = parseInt(allData["STAPM LIMIT"]);
+          let stapmValue = parseInt(allData["STAPM VALUE"]);
 
           this._powerLabel.set_text(`${stapmValue}W/${stapmLimit}W`);
         }
