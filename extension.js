@@ -144,20 +144,31 @@ const GPUMonitorIndicator = GObject.registerClass(
         }
       };
 
+      // Get TDP
+      runCommand(["ryzenadj", "-i", "--json"], (stdout) => {
+        let allData = JSON.parse(stdout);
+        if (!("error" in allData)) {
+          let stapmLimit = parseInt(cardData["STAPM LIMIT"]);
+          let stapmValue = parseInt(cardData["STAPM VALUE"]);
+
+          this._powerLabel.set_text(`${stapmValue}W/${stapmLimit}W`);
+        }
+      });
+
       // Get GPU frequency
       runCommand(["rocm-smi", "-a", "--showmeminfo", "vram", "--json"], (stdout) => {
         let allData = JSON.parse(stdout);
         if ("card0" in allData) {
           let cardData = allData["card0"];
-          let power = parseInt(cardData["Current Socket Graphics Package Power (W)"]);
+          // let power = parseInt(cardData["Current Socket Graphics Package Power (W)"]);
           let temp = parseInt(cardData["Temperature (Sensor edge) (C)"]);
           let gpuuse = cardData["GPU use (%)"];
           let vramall = this._formatBytes(parseInt(cardData["VRAM Total Memory (B)"]));
           let vramuse = this._formatBytes(parseInt(cardData["VRAM Total Used Memory (B)"]));
 
-          this._powerLabel.set_text(`${power}W (${gpuuse}%)`);
+          // this._powerLabel.set_text(`${power}W (${gpuuse}%)`);
 
-          this._tempLabel.set_text(`${temp}°C`);
+          this._tempLabel.set_text(`${temp}°C (${gpuuse}%)`);
           // Change color based on temperature
           if (temp > 85) {
             this._tempLabel.style_class = "gpu-monitor-label temp-high";
