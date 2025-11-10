@@ -9,6 +9,8 @@ cp extension.js metadata.json stylesheet.css ~/.local/share/gnome-shell/extensio
 
 sudo cp ryzenadj /usr/local/bin/ryzenadj
 
+sudo chmod +x /usr/local/bin/ryzenadj
+
 echo "🔑 Config sudo no password for /usr/local/bin/ryzenadj..."
 SUDOERS_ENTRIES=(
     "$USER ALL=(ALL) NOPASSWD: /usr/local/bin/ryzenadj"
