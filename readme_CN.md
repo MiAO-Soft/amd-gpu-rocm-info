@@ -2,8 +2,11 @@
 
 1. 安装gnome-shell-extension manager
    
-    <code>https://mattjakeman.com/apps/extension-manager</code>
-2. `bash setup.sh`
+    <code>
+      sudo apt install gnome-tweak-tool
+      sudo apt install gnome-shell-extensions
+    </code>
+2. `sudo bash setup.sh`
 
 3. 打开 Extension Manager
 
