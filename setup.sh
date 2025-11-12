@@ -1,11 +1,11 @@
 
 mkdir -p ~/.local/share/gnome-shell/extensions/
 
-rm -rfd ~/.local/share/gnome-shell/extensions/amd-gpu-rocm-info@black-hat
+rm -rfd ~/.local/share/gnome-shell/extensions/amd-gpu-rocm-info-v2@black-hat
 
-mkdir -p ~/.local/share/gnome-shell/extensions/amd-gpu-rocm-info@black-hat
+mkdir -p ~/.local/share/gnome-shell/extensions/amd-gpu-rocm-info-v2@black-hat
 
-cp extension.js metadata.json stylesheet.css ~/.local/share/gnome-shell/extensions/amd-gpu-rocm-info@black-hat
+cp extension.js metadata.json stylesheet.css ~/.local/share/gnome-shell/extensions/amd-gpu-rocm-info-v2@black-hat
 
 sudo cp ryzenadj /usr/local/bin/ryzenadj
 
